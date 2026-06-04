@@ -1,4 +1,12 @@
 import os
+import sys
+import io
+
+# Ensure stdout and stderr handle UTF-8 characters without crashing on Windows
+if sys.platform.startswith('win'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 import glob
 import threading
 from fastapi import FastAPI, BackgroundTasks

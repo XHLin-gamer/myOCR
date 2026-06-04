@@ -64,11 +64,11 @@ class GeminiTranslator:
         
         log_func("Extracting global terminology for review...")
         prompt = (
-            "Analyze the following translated document. Identify key recurring roles, organizations, "
-            "fees, or policies, and define the standard uniform English translations to use. "
-            "Output ONLY a raw JSON dictionary mapping terms/concepts to their uniform English translation. "
+            f"Analyze the following document translated into {self.target_lang}. Identify key recurring roles, organizations, "
+            f"fees, or policies, and define the standard uniform {self.target_lang} translations/terms to use. "
+            f"Output ONLY a raw JSON dictionary mapping terms/concepts to their uniform {self.target_lang} translation/term. "
             "Do not include any other text or markdown formatting blocks. "
-            "Example format: {\"Resident Assistant\": \"Resident Assistant (RA)\", \"謝金\": \"Honorarium\"}\n\n"
+            f"Example format for English: {{\"Resident Assistant\": \"Resident Assistant (RA)\", \"謝金\": \"Honorarium\"}}\n\n"
             f"Document:\n{full_text}"
         )
 
@@ -102,11 +102,11 @@ class GeminiTranslator:
             log_func(f"[{idx + 1}/{len(pages_data)}] Reviewing and aligning translation for {filename}...")
             
             review_prompt = (
-                f"Review the following translated Markdown page to ensure uniform word choice and proper layout alignment.\n"
-                f"Refer to this global glossary of standardized translations for consistency:\n{glossary}\n\n"
+                f"Review the following Markdown page translated into {self.target_lang} to ensure uniform word choice and proper layout alignment.\n"
+                f"Refer to this global glossary of standardized translations in {self.target_lang} for consistency:\n{glossary}\n\n"
                 "Rules:\n"
                 "1. Correct any terminology discrepancies to align with the global glossary.\n"
-                "2. Keep the translation natural and check for any awkward phrasing or grammar.\n"
+                f"2. Keep the translation natural in {self.target_lang} and check for any awkward phrasing or grammar.\n"
                 "3. Ensure the section headings (##, ###) and paragraph spacing are clean and properly aligned.\n"
                 "4. Output ONLY the reviewed Markdown. Do not wrap in markdown code blocks.\n\n"
                 f"Page Content:\n{page_md}"
