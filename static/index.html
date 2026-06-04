@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>myOCR - Document Transcriber & Translator</title>
+    <!-- Outfit Font for layout, JetBrains Mono for logs -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030014;
+            --card-bg: rgba(10, 10, 20, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            --primary-gradient: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+            --accent: #d946ef;
+            --text-color: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --success: #10b981;
+            --danger: #ef4444;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(217, 70, 239, 0.1) 0%, transparent 40%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            z-index: 10;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #ffffff, #a1a1aa, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            animation: scaleIn 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-gradient);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="text"], select {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        select option {
+            background-color: #0c0a1c;
+            color: var(--text-color);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-group input {
+            cursor: pointer;
+            accent-color: var(--primary);
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-group label {
+            text-transform: none;
+            font-size: 1rem;
+            color: var(--text-color);
+            letter-spacing: 0;
+            cursor: pointer;
+        }
+
+        .btn {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+            opacity: 0.95;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn:disabled {
+            background: var(--text-muted);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Progress Panel */
+        .progress-panel {
+            margin-top: 30px;
+            display: none;
+            border-top: 1px solid var(--border-color);
+            padding-top: 25px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-badge.running {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-badge.completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .progress-bar-container {
+            height: 8px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+
+        /* Terminal Console */
+        .console {
+            background: #05050d;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            height: 220px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .console-line {
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .console-line.error {
+            color: var(--danger);
+        }
+
+        .console-line.success {
+            color: var(--success);
+        }
+
+        /* Output Actions */
+        .output-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 25px;
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.02);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 12px 20px;
+            font-size: 1rem;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+
+        /* Scrollbar styling */
+        .console::-webkit-scrollbar {
+            width: 8px;
+        }
+        .console::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .console::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        .console::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Settings button and modal styles */
+        .settings-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+        }
+        .settings-btn:hover {
+            color: var(--primary);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+            transform: translateY(-50%) rotate(45deg);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(3, 0, 20, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            animation: scaleIn 0.3s ease;
+            position: relative;
+        }
+        .close-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            border-radius: 50%;
+        }
+        .close-btn:hover {
+            color: var(--danger);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .status-dot {
+            height: 8px;
+            width: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            transition: var(--transition);
+        }
+        .status-dot.active {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .status-dot.inactive {
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+        .status-dot.warning {
+            background-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header" style="position: relative;">
+            <h1>myOCR Orchestrator</h1>
+            <button type="button" class="settings-btn" onclick="openSettingsModal()" title="Pipeline Settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <p>Convert scanned documents to Markdown & PDF with smart post-processing & translation</p>
+        </div>
+
+        <div class="card">
+            <form id="convert-form" onsubmit="startConversion(event)">
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="input_dir">Input Folder Path</label>
+                        <input type="text" id="input_dir" value="data/RA_manu" required placeholder="e.g. data/RA_manu">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="output_md">Output File (Markdown)</label>
+                        <input type="text" id="output_md" value="output.md" required placeholder="e.g. output.md">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="provider">OCR Provider</label>
+                        <select id="provider" onchange="toggleRefineOptions()">
+                            <option value="gemini">Gemini 3.1 Flash-Lite</option>
+                            <option value="easyocr">EasyOCR (Local)</option>
+                            <option value="ollama">Ollama GLM-OCR (Local)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="refine">Layout Refinement</label>
+                        <select id="refine" onchange="toggleRefineModel()">
+                            <option value="none">None (Disabled)</option>
+                            <option value="gemini">Gemini Cloud Refine</option>
+                            <option value="ollama">Ollama Local Refine</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="refine-model-group" style="display: none;">
+                        <label for="refine_model">Refine Model Name</label>
+                        <input type="text" id="refine_model" placeholder="Auto-selected">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="translate">Translation Language</label>
+                        <select id="translate">
+                            <option value="none">None (Keep Japanese)</option>
+                            <option value="english">English</option>
+                            <option value="chinese">Chinese (Simplified)</option>
+                            <option value="vietnamese">Vietnamese</option>
+                        </select>
+                    </div>
+
+                    <div class="checkbox-group full-width">
+                        <input type="checkbox" id="pdf" checked>
+                        <label for="pdf">Generate styled PDF document</label>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                    Run Conversion Pipeline
+                </button>
+            </form>
+
+            <!-- Progress Panel -->
+            <div id="progress-panel" class="progress-panel">
+                <div class="progress-header">
+                    <h3 style="font-weight: 700; font-size: 1.1rem;">Pipeline Operations</h3>
+                    <div id="status-badge" class="status-badge running">Running</div>
+                </div>
+                <div class="progress-bar-container">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+                <div class="progress-info">
+                    <span id="current-file-label">Initializing...</span>
+                    <span id="progress-text">0/0</span>
+                </div>
+                <div id="console" class="console"></div>
+
+                <!-- Output Actions -->
+                <div id="output-actions" class="output-actions">
+                    <a id="download-md-btn" href="#" class="btn-outline" target="_blank">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download Markdown
+                    </a>
+                    <a id="download-pdf-btn" href="#" class="btn-outline" target="_blank">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pollInterval = null;
+
+        function toggleRefineOptions() {
+            const provider = document.getElementById("provider").value;
+            const refine = document.getElementById("refine");
+            
+            // Auto suggest refinement or clean up options
+            if (provider === "easyocr") {
+                refine.value = "gemini";
+            } else {
+                refine.value = "none";
+            }
+            toggleRefineModel();
+        }
+
+        function toggleRefineModel() {
+            const refine = document.getElementById("refine").value;
+            const group = document.getElementById("refine-model-group");
+            const modelInput = document.getElementById("refine_model");
+            
+            if (refine === "none") {
+                group.style.display = "none";
+                modelInput.value = "";
+            } else {
+                group.style.display = "flex";
+                modelInput.value = refine === "gemini" ? "gemini-3.1-flash-lite" : "qwen3.5:2b";
+            }
+        }
+
+        async function startConversion(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById("submit-btn");
+            submitBtn.disabled = true;
+            
+            const reqData = {
+                input_dir: document.getElementById("input_dir").value,
+                output_md: document.getElementById("output_md").value,
+                provider: document.getElementById("provider").value,
+                refine: document.getElementById("refine").value,
+                refine_model: document.getElementById("refine_model").value,
+                translate: document.getElementById("translate").value,
+                pdf: document.getElementById("pdf").checked
+            };
+
+            // Prepare UI state
+            document.getElementById("progress-panel").style.display = "block";
+            document.getElementById("output-actions").style.display = "none";
+            document.getElementById("console").innerHTML = "";
+            updateBadge("running", "Running");
+            updateProgress(0, 0, "Connecting to backend...");
+
+            try {
+                const response = await fetch("/api/convert", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(reqData)
+                });
+                const res = await response.json();
+                
+                if (res.error) {
+                    addLogLine(res.error, "error");
+                    updateBadge("error", "Error");
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                // Start polling progress
+                if (pollInterval) clearInterval(pollInterval);
+                pollInterval = setInterval(pollProgress, 1000);
+                
+            } catch (err) {
+                addLogLine("Network error: Failed to connect to server.", "error");
+                updateBadge("error", "Failed");
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function pollProgress() {
+            try {
+                const response = await fetch("/api/progress");
+                const data = await response.json();
+                
+                // Clear and rewrite console logs
+                const consoleEl = document.getElementById("console");
+                consoleEl.innerHTML = "";
+                data.logs.forEach(log => {
+                    const lineClass = log.toLowerCase().includes("error") ? "error" : (log.toLowerCase().includes("success") ? "success" : "");
+                    addLogLine(log, lineClass);
+                });
+
+                const current = data.current_step;
+                const total = data.total_steps;
+                const file = data.current_file;
+                const status = data.status;
+
+                updateProgress(current, total, file ? `Processing ${file}` : "Initializing pipeline...");
+
+                if (status === "completed") {
+                    clearInterval(pollInterval);
+                    updateBadge("completed", "Completed");
+                    document.getElementById("submit-btn").disabled = false;
+                    
+                    // Configure download buttons
+                    const mdBtn = document.getElementById("download-md-btn");
+                    const pdfBtn = document.getElementById("download-pdf-btn");
+                    
+                    mdBtn.href = `/api/download?path=${encodeURIComponent(data.output_md)}`;
+                    mdBtn.style.display = data.output_md ? "flex" : "none";
+                    
+                    pdfBtn.href = `/api/download?path=${encodeURIComponent(data.output_pdf)}`;
+                    pdfBtn.style.display = data.output_pdf ? "flex" : "none";
+                    
+                    document.getElementById("output-actions").style.display = "grid";
+                    
+                } else if (status === "error") {
+                    clearInterval(pollInterval);
+                    updateBadge("error", "Error");
+                    document.getElementById("submit-btn").disabled = false;
+                    addLogLine(`Error: ${data.error_message}`, "error");
+                }
+                
+            } catch (err) {
+                console.error("Error polling progress", err);
+            }
+        }
+
+        function updateProgress(current, total, filename) {
+            const bar = document.getElementById("progress-bar");
+            const text = document.getElementById("progress-text");
+            const label = document.getElementById("current-file-label");
+
+            if (total > 0) {
+                const pct = (current / total) * 100;
+                bar.style.width = `${pct}%`;
+                text.innerText = `${current}/${total}`;
+            } else {
+                bar.style.width = "0%";
+                text.innerText = "0/0";
+            }
+            label.innerText = filename;
+        }
+
+        function updateBadge(type, label) {
+            const badge = document.getElementById("status-badge");
+            badge.className = `status-badge ${type}`;
+            badge.innerText = label;
+        }
+
+        function addLogLine(text, className = "") {
+            const consoleEl = document.getElementById("console");
+            const div = document.createElement("div");
+            div.className = `console-line ${className}`;
+            div.innerText = text;
+            consoleEl.appendChild(div);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+
+        // Settings Modal Handlers
+        function openSettingsModal() {
+            const modal = document.getElementById("settings-modal");
+            modal.style.display = "flex";
+            loadSettings();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById("settings-modal").style.display = "none";
+            document.getElementById("settings-msg").style.display = "none";
+        }
+
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById("settings_api_key");
+            const eyeIcon = document.getElementById("eye-icon");
+            if (pwdInput.type === "password") {
+                pwdInput.type = "text";
+                eyeIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `; // Slash-eye icon
+            } else {
+                pwdInput.type = "password";
+                eyeIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `; // Regular eye icon
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch("/api/settings");
+                const data = await response.json();
+                
+                // Set input value
+                const keyInput = document.getElementById("settings_api_key");
+                keyInput.value = data.gemini_api_key;
+                
+                // Update diagnostics
+                updateDiagnostic("diag-gemini", data.gemini_api_key_set ? "active" : "inactive", data.gemini_api_key_set ? "Configured" : "Missing Key");
+            } catch (err) {
+                console.error("Error loading settings", err);
+            }
+        }
+
+        function updateDiagnostic(id, status, text) {
+            const container = document.getElementById(id);
+            const dot = container.querySelector(".status-dot");
+            const label = container.querySelector("span:not(.status-dot)");
+            
+            dot.className = `status-dot ${status}`;
+            label.innerText = text;
+            label.style.color = status === "active" ? "var(--text-color)" : "var(--text-muted)";
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            const msgEl = document.getElementById("settings-msg");
+            msgEl.style.display = "none";
+            
+            const keyVal = document.getElementById("settings_api_key").value;
+            
+            try {
+                const response = await fetch("/api/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ gemini_api_key: keyVal })
+                });
+                const res = await response.json();
+                
+                if (res.error) {
+                    msgEl.style.color = "var(--danger)";
+                    msgEl.innerText = res.error;
+                    msgEl.style.display = "block";
+                } else {
+                    msgEl.style.color = "var(--success)";
+                    msgEl.innerText = res.message;
+                    msgEl.style.display = "block";
+                    // Reload settings to update masks & diagnostics
+                    setTimeout(loadSettings, 500);
+                }
+            } catch (err) {
+                msgEl.style.color = "var(--danger)";
+                msgEl.innerText = "Network error: Failed to save settings.";
+                msgEl.style.display = "block";
+            }
+        }
+        
+        // Initial setup on script load
+        window.addEventListener("DOMContentLoaded", loadSettings);
+    </script>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+                <h2 style="font-weight: 800; font-size: 1.5rem; background: linear-gradient(to right, #ffffff, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Pipeline Settings</h2>
+                <button type="button" onclick="closeSettingsModal()" class="close-btn" title="Close Modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="settings-form" onsubmit="saveSettings(event)" style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Gemini API Key input -->
+                <div class="form-group">
+                    <label for="settings_api_key">Gemini API Key</label>
+                    <div style="position: relative;">
+                        <input type="password" id="settings_api_key" placeholder="Enter your Gemini API Key" style="padding-right: 45px;">
+                        <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: transparent; border: none; cursor: pointer; color: var(--text-muted);" title="Toggle Visibility">
+                            <!-- Eye icon -->
+                            <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Needed for Gemini Cloud OCR, refinement, and translation. Kept secure locally.</p>
+                </div>
+
+                <!-- Environment Diagnostics -->
+                <div style="background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 15px; display: flex; flex-direction: column; gap: 12px;">
+                    <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 6px;">Environment Diagnostics</h3>
+                    
+                    <!-- Gemini Diagnostic -->
+                    <div id="diag-gemini" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem;">
+                        <span>Gemini Cloud API</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="status-dot inactive"></span>
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">Checking...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="settings-msg" style="font-size: 0.9rem; text-align: center; display: none; padding: 5px; border-radius: var(--radius-md);"></div>
+
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <button type="button" onclick="closeSettingsModal()" class="btn-outline" style="flex: 1; padding: 10px 0;">Cancel</button>
+                    <button type="submit" class="btn" style="flex: 1; margin-top: 0; padding: 10px 0; font-size: 1rem;">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
